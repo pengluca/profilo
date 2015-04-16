@@ -1,4 +1,5 @@
 <?
+// un semplice commento
 require 'php/auth.php';
 session_start();
 if (!ck_sessione())
