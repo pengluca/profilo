@@ -1,0 +1,240 @@
+<?
+$ntel=$_POST[msisdn];
+$alias=$_POST[alias];
+if (!$ntel)
+   $ntel=$_GET[msisdn];
+require 'auth.php';
+if (!ck_sessione())
+   exit;
+if (!strstr($_SESSION['perms'],'A')&&(!strstr($_SESSION['perms'],'@')))
+{
+  $_SESSION['orario']=date('U');
+    ?>
+      <script language="javascript">  top.location="/profilo/index.php" </Script>
+    <?
+}
+?>
+<html>
+<body>
+<?
+// CREAZIONE PARAMETRI DI LOG
+$ip_client=$_SERVER[REMOTE_ADDR];
+$user=$_SESSION['usersess'];
+//$data_trans=date("dmY")."-".date("H:i:s");
+//$file_log=fopen("../log/accesso_".date("dm").".log","a+");
+//$riga_log=$ip_client.' '.$user."-$data_trans-$ntel-$alias\n";
+//fwrite($file_log,$riga_log);
+$allegato = $_FILES['allegato']['tmp_name'];
+system("find /opt/apache22/htdocs/profilo/tmp -mtime +5 -exec rm {} \;");
+if (is_uploaded_file($allegato))
+{
+  // CREAZIONE RIGA DI LOG
+  require 'file_conf';
+  $data_trans=date("H:i:s");
+  $nomef="risprof_".$user."_".$data_trans.".rtf";
+  $nome_file=$temp.$nomef;
+  $file_log=fopen("$nome_file","w");
+  $lista=fopen($allegato,"r");
+  while(!feof($lista))
+  {
+    $ntel=fgets($lista, 255);
+    $ntel=trim($ntel);
+    if ($ntel)
+    {
+      require 'file_conf';
+      $primochar=substr($ntel,0,1);
+     // INTERPRETO IL TIPO DI NUMERAZIONE (MEMOTEL,MOBILE)
+     if (($primochar == "3") || (strlen($alias) > 0))
+     {
+       $fp = fsockopen ($host_ibox, $port_ibox) or die("$errno : $errstr") ;
+       socket_set_blocking($fp , TRUE);
+       fputs($fp,$stringa_ibox);
+     }
+     else
+     {
+       $fp = fsockopen ($host_memo, $port_memo) or die("$errno : $errstr") ;
+       socket_set_blocking($fp , TRUE);
+       fputs($fp,$stringa_memo);
+     }
+     $line = fread($fp,1024);
+     $seunitim="NIENTE";
+     if (substr($line,33,5) == "RESUL")  
+     {
+     //UNITIM o IBOX
+       $controllo="ok";
+       $sc=split("\n",$line);
+       while (list($arg, $val) = each($sc))
+       {
+         list($argomento,$valore,$a,$b,$c,$d,$e,$f,$g,$h)=split(':',$val);
+         if ((substr($argomento,0,10) !== "1234567890") && (trim($argomento) !== "emailbuffer")) 	
+         { 
+           if (trim($argomento) == "enableservices") 
+           { 
+             $en=$valore; 
+             $argomento="UTENZA"; 	
+             $tipoen=array("unitim" => "UNITIM","um" => "IBOX","tiw" => "MEMOTEL"); 
+             if ($tipoen[$valore])
+                $seunitim=$tipoen[$valore];
+             else
+                $seunitim=$valore;
+             $valore=strtoupper($seunitim); 
+           } 
+           elseif ($argomento == "isp")
+             $valore=$g; 
+             //$valore=$g." ".$h; 
+           elseif ($argomento == "mailmessagestore")
+             $mailmss=$valore;
+           if ($valore === "0" )
+             $valore="disattivo";
+           elseif ($valore === "1")
+             $valore="attivo";
+           if (strlen(trim($valore)) > 0)
+              fwrite($file_log,$argomento.":".$valore." ");
+         }
+       }
+    //SE UNITIM O MMS CONTROLLIAMO LA CASELLA STC
+       if (($seunitim == "UNITIM") || ($seunitim == "mms") || ($seunitim == "timbase"))
+       {
+         fputs($fp,$stringa_stc);
+         $line = fread($fp,1024);
+         if (substr($line,33,5) == "RESUL")
+         {
+           //SOLO STC
+           $sc=split("\n",$line);
+           while (list($arg, $val) = each($sc))
+           {
+             list($argomento,$valore)=split(':',$val);
+             if ((substr($argomento,0,10) !== "1234567890") && (trim($argomento) !== "emailbuffer"))
+             {
+               if ($argomento == "enableservices")
+               {
+                 $argomento="UTENZA";   
+                 $valore=strtoupper($valore);
+               }
+               if ($valore === "0")
+                 $valore="disattivo";
+               elseif ($valore === "1")
+                 $valore="attivo";
+               if (strlen(trim($valore)) > 0)
+                 fwrite($file_log,$argomento."=".$valore." ");
+             }
+           }
+         }
+       }
+       if ($seunitim == "MEMOTEL")
+       {
+         if ($mailmss)
+         {
+           if (substr($mailmss,3,2)=="na") 
+             $db1="IMM6NA".substr($mailmss,5,2); 
+           elseif (substr($mailmss,3,2)=="mi") 
+             $db1="IMM6MI".substr($mailmss,5,2); 
+           else 
+             $db1="IMM6_".substr($mailmss,3,2); 
+           $prid='13'; 
+           $query="select count(FM_COUNTEDASUNREAD) from MX_MBOXMSGS_VIEW c, MX_MAILBOXNAMES d where d.boxid='$prid$ntel'  and c.HASHEDBOXID = d.HASHEDBOXID and c.boxid=d.boxid and msg_inv_type='VoiceTiw'";
+           $conn=OCILogon($login,$passwd,$db1) or die("Connessione Fallita al DB, Riprovare piu' tardi");
+           $stmt=oci_parse($conn, $query) or die("Errore nella query al DB per stato casella");
+           oci_execute($stmt, OCI_DEFAULT);
+           oci_fetch($stmt);
+           $nrmsg=oci_result($stmt,"COUNT(FM_COUNTEDASUNREAD)");
+           $query="select count(FM_COUNTEDASUNREAD) from MX_MBOXMSGS_VIEW c, MX_MAILBOXNAMES d where d.boxid='$pri
+d$ntel'  and c.HASHEDBOXID = d.HASHEDBOXID and c.boxid=d.boxid and msg_inv_type='ECC'";
+           $stmt=oci_parse($conn, $query) or die("Errore nella query al DB per stato casella");
+           oci_execute($stmt, OCI_DEFAULT);
+           oci_fetch($stmt);
+           $nrmsgecc=oci_result($stmt,"COUNT(FM_COUNTEDASUNREAD)");
+           fwrite($file_log,"MESSAGGI IN CASELLA: ".$nrmsg." ECC: ".$nrmsgecc);
+         }
+       }
+     }  
+     else 
+       $controllo="ko";
+     if ($primochar !== "3") 
+     {
+// SE E' UN FISSO ALLORA CERCHIAMO IL PROFILO ALICE_SMS
+       $conn=mysql_connect ($host_mysql, $user_db, $pass_db);
+       mysql_select_db ($db, $conn);
+       $laselect="select account,stato,user_profile,user_type,cli,servizio,mittente,master_account,data_login from profilo where cli=$ntel";
+       $ris=mysql_query($laselect, $conn);
+       $num_righe = mysql_num_rows($ris);
+       if ($num_righe)
+       {
+         fwrite($file_log,$ntel." ALICE_SMS ");
+         while ($rga = mysql_fetch_row($ris))
+         {
+           for ($i=0; $i < count($rga); $i++) 
+           {
+             $campo=mysql_field_name($ris, $i);
+             if ($rga[$i] !== "")
+               fwrite($file_log,$campo."=".$rga[$i]." ");
+           }
+         }
+         fwrite($file_log,"\n");
+         $controllo="ok";
+       }
+       mysql_close($conn);
+     }
+// CONTROLLIAMO SE HOMEZONE 
+     if (($primochar == "3") || (strlen($alias) > 0))
+     {
+       fputs($fp,$stringa_stchz);
+       $line = fread($fp,1024);
+       if (substr($line,33,5) == "RESUL")
+       {
+         $sc=split("\n",$line);
+         while (list($arg, $val) = each($sc))
+         {
+           list($argomento,$valore)=split(':',$val);
+           if ((substr($argomento,0,10) !== "1234567890") && (trim($argomento) !== "emailbuffer"))
+           {
+             if ($argomento == "enableservices")
+             {
+               $argomento="UTENZA";
+               $valore=strtoupper($valore);
+             }
+             if ($valore === "0")
+               $valore="disattivo";
+             elseif ($valore === "1")
+               $valore="attivo";
+             if (strlen(trim($valore)) > 0)
+               fwrite($file_log,$argomento."=".$valore." ");
+           }
+         }
+         $controllo="ok";
+       }
+     }
+// NESSUN PROFILO TROVATO
+     if ($controllo=="ko")
+        fwrite($file_log,$ntel." NESSUN SERVIZIO ATTIVO O ERRATA NUMERAZIONE");
+     fclose($fp);
+   }
+   fwrite($file_log,$argomento."\n");
+  }
+  fclose($lista);
+  fclose($file_log);
+  $dimensioni_file=filesize($nome_file);
+    if ($dimensioni_file > 0)
+    {
+      ?>
+      <HTML>
+      <BODY>
+      <TABLE BORDER=1 WIDTH=40% VALIGN=CENTER ALIGN=CENTER>
+      <TR><TH>Fai clic sul link per scaricare il file di report</TH></TR>
+      <tr><td>
+      <?
+        print "<a href='../../profilo/tmp/$nomef'>$nomef</a>";
+      ?>
+      </td></tr>
+      </TABLE>
+      </BODY>
+      </HTML>
+      <?
+    }
+}
+else {
+    echo "<p>Errore nell'upload del file ".$allegato."!</p>";
+}
+?>
+</body>
+</html>

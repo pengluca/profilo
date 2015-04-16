@@ -1,0 +1,77 @@
+<?php
+
+// Parametri directory temp
+$temp="/opt/apache22/htdocs/profilo/tmp/";
+
+// Parametri per ricerca Memotel
+$host_memo="213.230.128.226";
+$port_memo="7350";
+$stringa_memo="12345678901234seritel202datatype:oper\noper:read\nenableservices:tiw\naccountid:$ntel\ncos:\nservice:memppu||memabb||sm||405\nnot_data_enabled:\nnot_tiw_type:\nemptycallcap:\nrtelefono:\nactivegreeting:\nmailmessagestore:\nlang:\n\t\n";
+
+// Parametri per ricerca RESET STUTTER TONE MEMOTEL o 405
+//$host_stmem="192.168.204.92";
+$host_stmem="192.168.174.164";
+$port_stmem="7360";
+//$stringa_stmem="002018aaabbbaaabbbaaabbbdatatype:oper\noper:stuttertone align\naccountid:$ntel\nservice:$serv\n\t\n";
+$stringa_stmem="002018aaabbbaaabbbaaabbbdatatype:oper\noper:stuttertone align\naccountid:$ntel\nservice:\n\t\n";
+
+// Parametri per ricerca IBOX
+$host_ibox="213.230.128.226";
+$port_ibox="6350";
+$stringa_ibox="12345678901234seritel202datatype:oper\noper:read\nenableservices:sunrise||copernico||um||unitim||mms||stc\naccountid:$ntel\nalias:$alias@tim.it\nisp:\nmailmessagestore:\nnot_data_enabled:\nemptycallcap:\nwebssl:\ncos:\nactivegreeting:\nservice:\noperatore:\nlang:\ndueinuno:\nnumeroa:\nnumerob:\n\t\n";
+
+// Parametri per ricerca STC
+$host_stc="213.230.128.226";
+$port_stc="6350";
+$stringa_stc="12345678901234seritel202datatype:oper\noper:read\nenableservices:stc\naccountid:$ntel\nmailmessagestore:\nnot_data_enabled:\nemptycallcap:\nactivegreeting:\nphonetype:\nservice:\noperatore:\ncos:\nlang:\ndueinuno:\nnumeroa:\nnumerob:\n\t\n";
+
+// Parametri per connessione UAB
+$host_uab="192.168.174.166";
+$port_uab="6360";
+$pass="01getprofile26";
+$elementi=array ("UserName","MSISDN","Status","UserProfile");
+
+// Parametri per connessione OPSC e BGW
+$host_opsc="10.206.43.54";
+$port_opsc="4036";
+$host_bgw="10.206.41.248";
+$user_bgw=BWG;
+$tagric="CheckCReditt";
+$key_opsc=array("Utenza" => "Utenza","MSISDN" => "Msisdn","SERVICEPROVIDERID" => "Provider","DEACTIVATIONDATE" => "Scadenza Sim","LASTSYNCHVALUE" => "Credito Attuale");
+
+// Parametri per ricerca STC HOME-ZONE
+$host_stchz="213.230.128.226";
+$port_stchz="6350";
+$stringa_stchz="12345678901234seritel202datatype:oper\noper:read\nenableservices:stc_homezone\naccountid:$ntel\nmailmessagestore:\nnot_data_enabled:\nemptycallcap:\nactivegreeting:\nphonetype:\nslave:\nservice:\noperatore:\ncos:\nlang:\n\t\n";
+
+// Parametri rimozione profilo su UAB
+$causale="001";
+$ftp_host="fep03";
+$path_host="/stc/".$ftp_host."/provisioning/attuatori/att_sunrise_TIW/TMP/";
+$user_ftp="deluab";
+
+// Parametri accesso Mysql
+$host_mysql="192.168.172.170";
+$user_db="root";
+$pass_db="imail";
+$db="EWSMS";
+
+// Parametri accesso GMPS
+$HOST1="113.213.41.22";
+$HOST="113.212.41.20";
+$PORT="8500";
+
+// Accesso a Oracle Intermail
+$login="imail";
+$passwd="imail";
+$dbpr="IMD510";
+
+// Parametri accesso MAP3
+$MAP1="113.211.226.138";
+$MAP="113.212.49.76";
+$PORTMAP="8414";
+
+// Conversione enableservices ==> prefixid
+
+$prefid=array("unitim" => "10","stc" => "11","mms" => "12","um" => "10","sunrise" => "10","timbase" => "10","stc_homezone" => "15","copernico" => "16","tiw" => "13" );
+?>
